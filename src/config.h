@@ -8,6 +8,7 @@
 #define  CONFIG_H
 
 #include "cfg_board.h"
+#include "cfg_ddas.h"
 #include "cfg_flog.h"
 #include "cfg_ui.h"
 
