@@ -24,7 +24,7 @@ int bsp_ddas_init_timer(                        uint32_t        smplrate_sps )
 
 
         __HAL_RCC_TIM8_CLK_ENABLE();
-  
+
         htim.Instance                   =   TIM8;
         htim.Init.Period                =   (apb2_clk_hz / smplrate_sps) - 1;
         htim.Init.Prescaler             =   1000;
@@ -36,11 +36,11 @@ int bsp_ddas_init_timer(                        uint32_t        smplrate_sps )
         {
                 resp            =   -1;
         }
-  
+
         //TIM8 TRGO selection
         htim_cfg.MasterOutputTrigger    =   TIM_TRGO_UPDATE;
         htim_cfg.MasterSlaveMode        =   TIM_MASTERSLAVEMODE_DISABLE;
-  
+
         if( HAL_TIMEx_MasterConfigSynchronization( &htim, &htim_cfg ) != HAL_OK )
         {
                 resp            =   -1;
@@ -52,6 +52,7 @@ int bsp_ddas_init_timer(                        uint32_t        smplrate_sps )
 static
 int     bsp_ddas_init_adc( void )
 {
+/*
 	int                     resp    =   0;
 
 
@@ -80,11 +81,43 @@ int     bsp_ddas_init_adc( void )
         }
 
 	return( resp );
+*/
+
+	//ADC
+	RCC->APB2ENR |= ( RCC_APB2ENR_ADC1EN | RCC_APB2ENR_SYSCFGEN );
+	__DSB();
+
+	stm32f4_adc_cfg(                ADC1,
+	                                STM32F4_ADC_RESOLUTION_12_BIT,
+	                                STM32F4_ADC_DATA_ALIGN_RIGHT,
+	                                STM32F4_ADC_DMA_MODE_NONSTOP,
+	                                STM32F4_ADC_MODE_NONSTOP );
+
+	stm32f4_adc_regular_cfg(        ADC1,
+	                                STM32F4_ADC_ANALOG_WATCHDOG_DISABLE,
+	                                STM32F4_ADC_SCAN_MULTI,
+	                                STM32F4_ADC_REGULAR_ETRG_DISABLE );
+
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_1, STM32F4_ADC_CHNL_13 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_2, STM32F4_ADC_CHNL_12 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_3, STM32F4_ADC_CHNL_03 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_4, STM32F4_ADC_CHNL_04 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_5, STM32F4_ADC_CHNL_05 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_6, STM32F4_ADC_CHNL_06 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_7, STM32F4_ADC_CHNL_08 );
+	stm32f4_adc_sequence_cfg( ADC1, STM32F4_ADC_SEQUENCE_NUM_8, STM32F4_ADC_CHNL_09 );
+
+	stm32f4_adc_sequence_size_set( ADC1, STM32F4_ADC_SEQUENCE_SIZE_8 );
+
+	stm32f4_adc_enable( ADC1 );
+
+	return( 0 );
 }
 
 static
 void	bsp_ddas_init_adc_io( void )
 {
+/*
 	GPIO_InitTypeDef        gpio_adc01  =   {    .Pin       =    GPIO_PIN_3,
 	                                             .Mode      =    GPIO_MODE_ANALOG,
 	                                             .Pull      =    GPIO_NOPULL };
@@ -131,11 +164,25 @@ void	bsp_ddas_init_adc_io( void )
 	HAL_GPIO_Init( GPIOA, &gpio_adc06 );
 	HAL_GPIO_Init( GPIOB, &gpio_adc07 );
 	HAL_GPIO_Init( GPIOB, &gpio_adc08 );
+*/
+	//GPIO
+	RCC->AHB1ENR |= (RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOBEN | RCC_AHB1ENR_GPIOAEN);
+	__DSB();
+
+	stm32f4_gpio_cfg_pin(GPIOC, STM32F4_GPIO_PIN_03, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOC, STM32F4_GPIO_PIN_02, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOA, STM32F4_GPIO_PIN_03, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOA, STM32F4_GPIO_PIN_04, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOA, STM32F4_GPIO_PIN_05, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOA, STM32F4_GPIO_PIN_06, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOB, STM32F4_GPIO_PIN_00, STM32F4_GPIO_CFG_INP_ANALOG);
+	stm32f4_gpio_cfg_pin(GPIOB, STM32F4_GPIO_PIN_01, STM32F4_GPIO_CFG_INP_ANALOG);
 }
 
 static
 void bsp_ddas_init_adc_dma( void )
 {
+/*
 	__HAL_RCC_DMA2_CLK_ENABLE();
 
 	hdma.Instance                   =   DMA2_Stream0;
@@ -155,8 +202,9 @@ void bsp_ddas_init_adc_dma( void )
 	HAL_DMA_Init( &hdma );
 	__HAL_LINKDMA( &hadc, DMA_Handle, hdma );
 
-        //HAL_NVIC_SetPriority( ADCx_DMA_IRQn, 0, 0);   
+        //HAL_NVIC_SetPriority( ADCx_DMA_IRQn, 0, 0);
         //HAL_NVIC_EnableIRQ( ADCx_DMA_IRQn );
+*/
 }
 
 /**
@@ -176,9 +224,10 @@ void	bsp_ddas_init( void )
 /**
  * @brief BSP DDAS recieve block
  */
-int bsp_ddas_start(                     const   int32_t *       data,
+int bsp_ddas_start(                     const   int16_t *       data,
                                                 size_t          size )
 {
+/*
         ADC_ChannelConfTypeDef  adc_cfg_ch1 =   {       .Channel        =   ADC_CHANNEL_1,
                                                         .Rank           =   1,
                                                         .SamplingTime   =   ADC_SAMPLETIME_28CYCLES,
@@ -231,13 +280,54 @@ int bsp_ddas_start(                     const   int32_t *       data,
 
         if( HAL_ADC_Start_DMA( &hadc, (uint32_t *) data, size ) != HAL_OK)
         {
-                return( -1 ); 
+                return( -1 );
         }
 
         if( HAL_TIM_Base_Start( &htim ) != HAL_OK)
         {
-                return( -1 ); 
+                return( -1 );
         }
+
+        return( 0 );
+*/
+
+	//DMA
+	RCC->AHB1ENR |= RCC_AHB1ENR_DMA2EN;
+	__DSB();
+
+	stm32f4_dma_disable(            DMA2_Stream0);
+
+	stm32f4_dma_cfg_mem(            DMA2_Stream0,
+	                     (uint32_t) data,
+	                     (uint32_t) data,
+	                                STM32F4_DMA_BURST_NONE,
+	                                STM32F4_DMA_XFER_SIZE_16_BIT,
+	                                STM32F4_DMA_INCREMENT_ENABLE);
+
+	stm32f4_dma_cfg_peri(           DMA2_Stream0,
+	                     (uint32_t) &ADC1->DR,
+	                                STM32F4_DMA_BURST_NONE,
+	                                STM32F4_DMA_XFER_SIZE_16_BIT,
+	                                STM32F4_DMA_INCREMENT_DISABLE);
+
+	stm32f4_dma_cfg_xfer(           DMA2_Stream0,
+	                                size,
+	                                STM32F4_DMA_RQST_CHNL_0,
+	                                STM32F4_DMA_PRIORITY_VERYHIGH,
+	                                STM32F4_DMA_CIRCULAR_ENABLE,
+	                                STM32F4_DMA_DIR_PERI2MEM);
+
+	stm32f4_dma_irq_cfg(            DMA2_Stream0,
+	                                STM32F4_DMA_IRQ_XFER_COMPLETE,
+	                                true );
+
+	stm32f4_dma_enable(             DMA2_Stream0);
+
+	//NVIC
+	//NVIC_SetPriority(               DMA2_Stream0_IRQn, BSP_NVIC_PRIO_FOC_SENS_U);
+	//NVIC_EnableIRQ(                 DMA2_Stream0_IRQn);
+
+	stm32f4_adc_start( ADC1 );
 
         return( 0 );
 }
@@ -247,5 +337,6 @@ int bsp_ddas_start(                     const   int32_t *       data,
  */
 void bsp_ddas_dma_isr( void )
 {
-        HAL_DMA_IRQHandler( hadc.DMA_Handle );
+        //HAL_DMA_IRQHandler( hadc.DMA_Handle );
+        DMA2->LIFCR	=	DMA_LIFCR_CTCIF0;
 }

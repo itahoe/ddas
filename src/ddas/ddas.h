@@ -12,7 +12,7 @@
 #include "bsp_ddas.h"
 
 
-typedef	int32_t				ddas_smpl_t;
+typedef	int16_t				ddas_smpl_t;
 
 
 typedef	struct	ddas_s

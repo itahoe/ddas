@@ -177,6 +177,21 @@ void WWDG_IRQHandler(void)
 }
 
 /**
+ * @brief RTC WakeUp interrupt handler
+ */
+void RTC_WKUP_IRQHandler( void )
+{
+	#ifdef  NDEBUG
+	NVIC_SystemReset();
+	#else
+	if (CoreDebug->DHCSR & CoreDebug_DHCSR_C_DEBUGEN_Msk) {
+		__asm volatile ("bkpt #0\n"); // Break into the debugger
+	}
+	while(1);
+	#endif //NDEBUG
+}
+
+/**
  * @brief SysTick timer interrupt handler
  */
 void SysTick_Handler(void)
@@ -226,7 +241,7 @@ void DMA2_Stream7_IRQHandler( void )
   */
 void DMA2_Stream0_IRQHandler( void )
 {
-        bsp_ddas_dma_isr();
+        app_adc_dma_complete_hook();
 }
 
 /**
@@ -256,7 +271,7 @@ void DMA2_Stream3_IRQHandler(void)
   */
 void DMA2_Stream6_IRQHandler(void)
 {
-	BSP_SD_DMA_Tx_IRQHandler(); 
+	BSP_SD_DMA_Tx_IRQHandler();
 }
 
 /**

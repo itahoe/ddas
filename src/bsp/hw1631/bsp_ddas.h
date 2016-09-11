@@ -16,7 +16,7 @@
 
 void bsp_ddas_init(                             void );
 
-int bsp_ddas_start(                     const   int32_t *       p,
+int bsp_ddas_start(                     const   int16_t *       p,
                                                 size_t          size );
 
 void bsp_ddas_dma_isr(                          void );

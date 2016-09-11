@@ -9,20 +9,19 @@
 #include "app.h"
 #include "flog.h"
 #include "usbd_desc.h"
-#include "usbd_cdc.h" 
+#include "usbd_cdc.h"
 #include "usbd_cdc_interface.h"
 
-
-#define STR_SIZEOF              256
 
 	USBD_HandleTypeDef      husbd;
 	app_t                   app;
 	flog_t                  flog;
-static  ddas_smpl_t             data_adc[ CFG_DDAS_BLCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
+static  ddas_smpl_t             data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
 
 static  ddas_t                  ddas    =     { .data   =   data_adc[0],
-                                                .size   =   CFG_DDAS_BLCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX };
+                                                .size   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX };
 
+#define STR_SIZEOF              256
 static  uint8_t                 str[ STR_SIZEOF ];
 
 
@@ -43,7 +42,7 @@ void	app_error( void )
 
 /**
   * @brief  System Clock Configuration
-  *         The system Clock is configured as follow : 
+  *         The system Clock is configured as follow :
   *            System Clock source            = PLL (HSE)
   *            SYSCLK(Hz)                     = 168000000
   *            HCLK(Hz)                       = 168000000
@@ -73,8 +72,8 @@ void app_clock_config( void )
 
         __HAL_RCC_PWR_CLK_ENABLE();
 
-        //The voltage scaling allows optimizing the power consumption when the device is 
-        //clocked below the maximum system frequency, to update the voltage scaling value 
+        //The voltage scaling allows optimizing the power consumption when the device is
+        //clocked below the maximum system frequency, to update the voltage scaling value
         //regarding system frequency refer to product datasheet.  */
         __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE1);
 
@@ -87,14 +86,14 @@ void app_clock_config( void )
         osc.PLL.PLLP            =   2;
         osc.PLL.PLLQ            =   7;
         HAL_RCC_OscConfig( &osc );
-  
+
         clk.ClockType           =   RCC_CLOCKTYPE_SYSCLK | RCC_CLOCKTYPE_HCLK | RCC_CLOCKTYPE_PCLK1 | RCC_CLOCKTYPE_PCLK2;
         clk.SYSCLKSource        =   RCC_SYSCLKSOURCE_PLLCLK;
         clk.AHBCLKDivider       =   RCC_SYSCLK_DIV1;
-        clk.APB1CLKDivider      =   RCC_HCLK_DIV4;  
-        clk.APB2CLKDivider      =   RCC_HCLK_DIV2;  
+        clk.APB1CLKDivider      =   RCC_HCLK_DIV4;
+        clk.APB2CLKDivider      =   RCC_HCLK_DIV2;
         HAL_RCC_ClockConfig( &clk, FLASH_LATENCY_5 );
-  
+
         //STM32F405x/407x/415x/417x Revision Z devices: prefetch is supported
         if( HAL_GetREVID() == 0x1001 )
         {
@@ -102,10 +101,13 @@ void app_clock_config( void )
         }
 }
 
-void HAL_ADC_ConvCpltCallback(          ADC_HandleTypeDef *     hadc )
+//void HAL_ADC_ConvCpltCallback(          ADC_HandleTypeDef *     hadc )
+void app_adc_dma_complete_hook( void )
 {
-	uint8_t *       data    =   (uint8_t *) data_adc[ CFG_DDAS_BLCK_SIZE_SMPL/2 ];
-	size_t          size    =   ( CFG_DDAS_BLCK_SIZE_SMPL/2 ) * 4;
+        bsp_ddas_dma_isr();
+
+	//uint8_t *       data    =   (uint8_t *) data_adc[ CFG_DDAS_BLCK_SIZE_SMPL/2 ];
+	size_t          size    =   ( CFG_DDAS_BLOCK_SIZE_SMPL/2 ) * 4;
 
 	if( flog.sts.enable )
 	{

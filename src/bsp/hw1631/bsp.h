@@ -11,7 +11,8 @@
 #include <stdbool.h>
 #include "config.h"
 #include "app_trace.h"
-#include "stm32f4xx_hal.h"
+#include "stm32f4_lll.h"
+//#include "stm32f4xx_hal.h"
 
 #define BSP_SYSTICK_HZ                  1000ul
 

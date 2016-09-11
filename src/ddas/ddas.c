@@ -18,7 +18,6 @@
 void ddas_init(                             ddas_t *            p )
 {
 	bsp_ddas_init();
-	//memset( p, 0, sizeof( ddas_t ) );
 }
 
 void ddas_start(                            ddas_t *            p )
