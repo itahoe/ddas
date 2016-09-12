@@ -14,11 +14,13 @@
 #include "bsp.h"
 
 
-void bsp_ddas_init(                             void );
+void bsp_ddas_init(                     const   int16_t *               data,
+                                                size_t                  size );
 
-int bsp_ddas_start(                     const   int16_t *       p,
-                                                size_t          size );
+void bsp_ddas_start( void );
 
-void bsp_ddas_dma_isr(                          void );
+void bsp_ddas_dma_isr( void );
+
+void bsp_ddas_vref_init(                        size_t                  pwm_carrier_hz );
 
 #endif	//BSP_DDAS_H
