@@ -220,7 +220,7 @@ void SysTick_Handler(void)
 /**
  * @brief USART1 interrupt handler
  */
-void    USART1_IRQHandler( void )
+void USART1_IRQHandler( void )
 {
 	//uint32_t        sts                     =   USART1->SR;
 	//uint32_t        data                    =   USART1->DR;
@@ -241,7 +241,7 @@ void DMA2_Stream7_IRQHandler( void )
   */
 void DMA2_Stream0_IRQHandler( void )
 {
-        app_adc_dma_complete_hook();
+        ddas_adc_dma_isr();
 }
 
 /**

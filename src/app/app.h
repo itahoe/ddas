@@ -60,6 +60,9 @@ typedef	struct	app_s
 }	app_t;
 
 
-void	app_error( void );
+void app_error( void );
+
+void app_adc_dma_half_hook( void );
+void app_adc_dma_full_hook( void );
 
 #endif	//APP_H

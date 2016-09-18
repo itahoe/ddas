@@ -18,8 +18,9 @@
 	flog_t                  flog;
 static  ddas_smpl_t             data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
 
-static  ddas_t                  ddas    =     { .data   =   data_adc[0],
-                                                .size   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX };
+static  ddas_t                  ddas    =     { .adc_smplrate_sps       =   1000,
+                                                .data                   =   data_adc[0],
+                                                .size                   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX };
 
 #define STR_SIZEOF              256
 static  uint8_t                 str[ STR_SIZEOF ];
@@ -101,17 +102,36 @@ void app_clock_config( void )
         }
 }
 
-//void HAL_ADC_ConvCpltCallback(          ADC_HandleTypeDef *     hadc )
-void app_adc_dma_complete_hook( void )
+void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
 {
-        bsp_ddas_dma_isr();
+        volatile        int     temp    =   0;
+
+        temp = temp;
+/*
+        uint8_t *       data    =   fifo_uart1_rx.data + 0;
+        size_t          size    =   CFG_GNSS_BLCK_SIZE_OCT/2;
+
+        if( flog.sts.enable )
+        {
+                ui_led_sd_set( false );
+                flog_write( &flog, data, size );
+                ui_led_sd_set( true );
+        }
+*/
+}
+
+//void app_adc_dma_half_hook( void )
+void app_hook_adc_dma_full( void )
+{
+        //bsp_ddas_dma_isr();
 
 	//uint8_t *       data    =   (uint8_t *) data_adc[ CFG_DDAS_BLCK_SIZE_SMPL/2 ];
 	size_t          size    =   ( CFG_DDAS_BLOCK_SIZE_SMPL/2 ) * 4;
 
 	if( flog.sts.enable )
 	{
-                snprintf(       str,
+/*
+                snprintf(       (char *) str,
                                 STR_SIZEOF,
                                 "%4d,%4d,%4d,%4d,%4d,%4d,%4d,%4d,\n",
                                 data_adc[ 0 ][ 0 ],
@@ -124,6 +144,13 @@ void app_adc_dma_complete_hook( void )
                                 data_adc[ 0 ][ 7 ] );
 
                 size    =   (4 + 1) * CFG_DDAS_CHNL_MAX + 1;
+*/
+                snprintf(       (char *) str,
+                                STR_SIZEOF,
+                                "%4d,\r\n",
+                                app.tick_1hz_cnt );
+
+                size            =   6;
 
                 ui_led_sd_set( false );
 		flog_write( &flog, str, size );

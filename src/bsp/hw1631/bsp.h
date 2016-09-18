@@ -16,7 +16,8 @@
 
 #define BSP_SYSTICK_HZ                  1000ul
 
-#define BSP_NVIC_PRIO_GNSS_DMA_RX       9
+#define BSP_NVIC_PRIO_DDAS_ADC          13
+
 #define BSP_NVIC_PRIO_GNSS_DMA_TX       9
 #define BSP_NVIC_PRIO_GNSS_RECV_SMBL    11
 #define BSP_NVIC_PRIO_SDIO              5
