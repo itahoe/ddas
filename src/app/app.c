@@ -102,31 +102,17 @@ void app_clock_config( void )
         }
 }
 
-void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
-{
-        volatile        int     temp    =   0;
-
-        temp = temp;
-/*
-        uint8_t *       data    =   fifo_uart1_rx.data + 0;
-        size_t          size    =   CFG_GNSS_BLCK_SIZE_OCT/2;
-
-        if( flog.sts.enable )
-        {
-                ui_led_sd_set( false );
-                flog_write( &flog, data, size );
-                ui_led_sd_set( true );
-        }
-*/
-}
 
 //void app_adc_dma_half_hook( void )
-void app_hook_adc_dma_full( void )
+//void app_hook_adc_dma_full( void )
+void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
 {
         //bsp_ddas_dma_isr();
 
 	//uint8_t *       data    =   (uint8_t *) data_adc[ CFG_DDAS_BLCK_SIZE_SMPL/2 ];
 	size_t          size    =   ( CFG_DDAS_BLOCK_SIZE_SMPL/2 ) * 4;
+
+        ddas.cnt_blck++;
 
 	if( flog.sts.enable )
 	{

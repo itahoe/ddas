@@ -5,7 +5,8 @@
   */
 
 
-#include	"bsp_ddas.h"
+//#include "stm32f4xx_hal.h"
+#include "bsp_ddas.h"
 
 
 static ADC_HandleTypeDef                hadc;
@@ -31,7 +32,7 @@ void bsp_ddas_adc_timebase_cfg(                 uint32_t                smplrate
 
         htim.Instance                   =   TIM8;
         htim.Init.Period                =   cnt_period_tcks - 1;
-        htim.Init.Prescaler             =   0;
+        htim.Init.Prescaler             =   prescaler_tcks;
         htim.Init.ClockDivision         =   0;
         htim.Init.CounterMode           =   TIM_COUNTERMODE_UP;
         htim.Init.RepetitionCounter     =   0;
@@ -149,7 +150,8 @@ void bsp_ddas_adc_cfg( void )
         hadc.Init.ClockPrescaler        =   ADC_CLOCKPRESCALER_PCLK_DIV2;
         hadc.Init.Resolution            =   ADC_RESOLUTION_12B;
         hadc.Init.ScanConvMode          =   ENABLE;
-        hadc.Init.ContinuousConvMode    =   ENABLE;
+        //hadc.Init.ContinuousConvMode    =   ENABLE;
+        hadc.Init.ContinuousConvMode    =   DISABLE;
         hadc.Init.DiscontinuousConvMode =   DISABLE;
         hadc.Init.NbrOfDiscConversion   =   0;
         hadc.Init.ExternalTrigConvEdge  =   ADC_EXTERNALTRIGCONVEDGE_RISING;
@@ -275,3 +277,14 @@ void bsp_ddas_adc_dma_isr( void )
 {
         HAL_DMA_IRQHandler( hadc.DMA_Handle );
 }
+
+/*
+void HAL_ADC_ConvHalfCpltCallback( &hadc )
+{
+}
+*/
+/*
+void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
+{
+}
+*/

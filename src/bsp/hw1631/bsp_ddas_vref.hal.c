@@ -5,76 +5,76 @@
   */
 
 
+#include "stm32f4_lll.h"
+#include "stm32f4xx_hal.h"
 #include "bsp_ddas.h"
 
 
-void bsp_ddas_vref_init(                        size_t                  pwm_carrier_hz )
+static TIM_HandleTypeDef                htim;
+
+
+static
+void	bsp_ddas_vref_io_cfg( void )
 {
+	GPIO_InitTypeDef        gpio_vref       = {     .Pin            =   GPIO_PIN_9,
+	                                                .Mode           =   GPIO_MODE_AF_PP,
+	                                                .Pull           =   GPIO_NOPULL,
+                                                        .Speed          =   GPIO_SPEED_FREQ_MEDIUM,
+                                                        .Alternate      =   GPIO_AF1_TIM1 };
+
+	__HAL_RCC_GPIOE_CLK_ENABLE();
+
+	HAL_GPIO_Init( GPIOE, &gpio_vref );
+}
+
+static
+void bsp_ddas_vref_pwm_cfg(                     size_t                  pwm_carrier_hz )
+{
+        TIM_OC_InitTypeDef      tim_cmp;
+
         size_t                  apb2_clk_hz     =   SystemCoreClock / 2;
         size_t                  prescaler_tcks  =   0;
         size_t                  pwm_cycle_tcks  =   (apb2_clk_hz / (prescaler_tcks + 1)) / pwm_carrier_hz;
         size_t                  pwm_duty_tcks   =   pwm_cycle_tcks / 2;
 
 
-        //GPIO
-	RCC->AHB1ENR |= ( RCC_AHB1ENR_GPIOEEN );
-	__DSB();
+        __HAL_RCC_TIM1_CLK_ENABLE();
+        __HAL_RCC_TIM1_FORCE_RESET();
+        __HAL_RCC_TIM1_RELEASE_RESET();
 
-	stm32f4_gpio_pin_cfg(           GPIOE,
-                                        STM32F4_GPIO_PIN_09,
-                                        STM32F4_GPIO_CFG_ALT_PP_SPEED_MEDIUM );
+        htim.Instance                   =   TIM1;
+        htim.Init.Period                =   pwm_cycle_tcks;
+        htim.Init.Prescaler             =   prescaler_tcks;
+        htim.Init.ClockDivision         =   0;
+        htim.Init.CounterMode           =   TIM_COUNTERMODE_UP;
+        htim.Init.RepetitionCounter     =   0;
 
-	stm32f4_gpio_af_cfg(            GPIOE,
-                                        STM32F4_GPIO_PIN_09,
-                                        STM32F4_GPIO_AF1_TIM1 );
+        if( HAL_TIM_PWM_Init( &htim ) != HAL_OK )
+        {
+                // TIM Initialization Error
+        }
 
-        //TIM
-	RCC->APB2ENR |= RCC_APB2ENR_TIM1EN;
-	__DSB();
+        tim_cmp.OCMode                  =   TIM_OCMODE_PWM2;
+        tim_cmp.OCFastMode              =   TIM_OCFAST_DISABLE;
+        tim_cmp.OCPolarity              =   TIM_OCPOLARITY_LOW;
+        tim_cmp.OCNPolarity             =   TIM_OCNPOLARITY_HIGH;
+        tim_cmp.OCIdleState             =   TIM_OCIDLESTATE_SET;
+        tim_cmp.OCNIdleState            =   TIM_OCNIDLESTATE_RESET;
+        tim_cmp.Pulse                   =   pwm_duty_tcks;
 
-	RCC->APB2RSTR |= RCC_APB2RSTR_TIM1RST;
-	__DSB();
+        if( HAL_TIM_PWM_ConfigChannel( &htim, &tim_cmp, TIM_CHANNEL_1 ) != HAL_OK )
+        {
+                //TIM CHNL Configuration Error
+        }
 
-	RCC->APB2RSTR &= ~RCC_APB2RSTR_TIM1RST;
-	__DSB();
+        if( HAL_TIM_PWM_Start( &htim, TIM_CHANNEL_1 ) != HAL_OK )
+        {
+                //TIM Starting Error
+        }
+}
 
-	stm32f4_tmr_cfg(                TIM1,
-                                        STM32F4_TMR_CKDIV_1,
-                                        STM32F4_TMR_CHNL_DMA_EVT_DEFAULT,
-                                        STM32F4_TMR_CHNL_UPD_EVT_COMG_OR_TRGI,
-                                        STM32F4_TMR_CHNL_PRELOAD_ENABLE );
-
-	stm32f4_tmr_cnt_cfg(            TIM1,
-	                                STM32F4_TMR_CNT_PRELOAD_DISABLE,
-	                                STM32F4_TMR_CNT_MODE_UP_NONSTOP,
-	                                STM32F4_TMR_CNT_UPD_EVT_SRC_ANY );
-
-	stm32f4_tmr_chnl_cfg_mode(      TIM1,
-                                        STM32F4_TMR_CHNL_1,
-                                        STM32F4_TMR_CHNL_MODE_COMPARE );
-
-        stm32f4_tmr_cmp_cfg(            TIM1,
-                                        STM32F4_TMR_CHNL_1,
-                                        STM32F4_TMR_CMP_FAST_DISABLE,
-                                        STM32F4_TMR_CMP_PRELOAD_ENABLE,
-                                        STM32F4_TMR_CMP_MODE_PWM_POSITIVE,
-                                        STM32F4_TMR_CMP_CLR_DISABLE );
-
-        stm32f4_tmr_out_p_cfg(          TIM1,
-                                        STM32F4_TMR_CHNL_1,
-                                        STM32F4_TMR_OUT_DIRECT );
-
-	stm32f4_tmr_prescaler_set(      TIM1, prescaler_tcks );
-
-	stm32f4_tmr_period_set(         TIM1, pwm_cycle_tcks - 1);
-
-	stm32f4_tmr_cmp_set(            TIM1, STM32F4_TMR_CHNL_1, pwm_duty_tcks - 1 );
-
-
-	stm32f4_tmr_enable(             TIM1 );
-
-
-	TIM1->EGR       =   TIM_EGR_COMG | TIM_EGR_UG;
-        //master output enable
-	TIM1->BDTR      =   TIM_BDTR_AOE | TIM_BDTR_MOE;
+void bsp_ddas_vref_init(                        size_t                  pwm_carrier_hz )
+{
+        bsp_ddas_vref_io_cfg();
+        bsp_ddas_vref_pwm_cfg( pwm_carrier_hz );
 }

@@ -20,6 +20,7 @@ typedef	struct	ddas_s
         size_t                  adc_smplrate_sps;
         ddas_smpl_t *           data;
 	size_t                  size;
+        size_t                  cnt_blck;
 } ddas_t;
 
 

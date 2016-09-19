@@ -16,8 +16,8 @@
   *
   *        http://www.st.com/software_license_agreement_liberty_v2
   *
-  * Unless required by applicable law or agreed to in writing, software 
-  * distributed under the License is distributed on an "AS IS" BASIS, 
+  * Unless required by applicable law or agreed to in writing, software
+  * distributed under the License is distributed on an "AS IS" BASIS,
   * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
   * See the License for the specific language governing permissions and
   * limitations under the License.
@@ -27,7 +27,7 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "usbd_desc.h"
-#include "usbd_cdc.h" 
+#include "usbd_cdc.h"
 #include "usbd_cdc_interface.h"
 #include "bsp_usb.h"
 #include "bsp.h"
@@ -63,7 +63,7 @@ static	int8_t CDC_Itf_DeInit( void );
 static	int8_t CDC_Itf_Control(uint8_t cmd, uint8_t* pbuf, uint16_t length);
 static	int8_t CDC_Itf_Receive(uint8_t* pbuf, uint32_t *Len);
 
-USBD_CDC_ItfTypeDef USBD_CDC_fops = 
+USBD_CDC_ItfTypeDef USBD_CDC_fops =
 {
 	CDC_Itf_Init,
 	CDC_Itf_DeInit,
@@ -136,7 +136,7 @@ void ComPort_Config(void)
 			{
 				UartHandle.Init.WordLength = UART_WORDLENGTH_8B;
 			}
-			else 
+			else
 			{
 				UartHandle.Init.WordLength = UART_WORDLENGTH_9B;
 			}
@@ -174,7 +174,7 @@ void ComPort_Config(void)
   */
 static
 void TIM_Config( void )
-{  
+{
 	/* Set TIMx instance */
 	htim_cdc.Instance               =   TIMx;
 
@@ -252,7 +252,7 @@ int8_t CDC_Itf_Init(void)
 
 	USBD_CDC_SetTxBuffer( &husbd, UserTxBuffer, 0 );
 	USBD_CDC_SetRxBuffer( &husbd, UserRxBuffer );
-  
+
 	return( USBD_OK );
 }
 
@@ -277,14 +277,14 @@ int8_t CDC_Itf_DeInit(void)
 /**
   * @brief  CDC_Itf_Control
   *         Manage the CDC class requests
-  * @param  Cmd: Command code            
+  * @param  Cmd: Command code
   * @param  Buf: Buffer containing command data (request parameters)
   * @param  Len: Number of data to be sent (in bytes)
   * @retval Result of the operation: USBD_OK if all operations are OK else USBD_FAIL
   */
 static
 int8_t CDC_Itf_Control (uint8_t cmd, uint8_t* pbuf, uint16_t length)
-{ 
+{
 	switch( cmd )
 	{
 		case CDC_SEND_ENCAPSULATED_COMMAND:
@@ -313,7 +313,7 @@ int8_t CDC_Itf_Control (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 			LineCoding.format       =   pbuf[4];
 			LineCoding.paritytype   =   pbuf[5];
 			LineCoding.datatype     =   pbuf[6];
-    
+
 			/* Set the new configuration */
 			ComPort_Config();
 			break;
@@ -325,7 +325,7 @@ int8_t CDC_Itf_Control (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 			pbuf[3] = (uint8_t)(LineCoding.bitrate  >> 24 );
 			pbuf[4] = LineCoding.format;
 			pbuf[5] = LineCoding.paritytype;
-			pbuf[6] = LineCoding.datatype;     
+			pbuf[6] = LineCoding.datatype;
 			break;
 
 		case CDC_SET_CONTROL_LINE_STATE:
@@ -334,18 +334,18 @@ int8_t CDC_Itf_Control (uint8_t cmd, uint8_t* pbuf, uint16_t length)
 
 		case CDC_SEND_BREAK:
 			/* Add your code here */
-			break;    
-    
+			break;
+
 		default:
 			break;
 	}
-  
+
 	return( USBD_OK );
 }
 
 /**
   * @brief  CDC_Itf_DataRx
-  *         Data received over USB OUT endpoint are sent over CDC interface 
+  *         Data received over USB OUT endpoint are sent over CDC interface
   *         through this function.
   * @param  Buf: Buffer of data to be transmitted
   * @param  Len: Number of data received (in bytes)
@@ -366,11 +366,13 @@ int8_t CDC_Itf_Receive(                 uint8_t *               data,
   * @param  huart: UART handle
   * @retval None
   */
+/*
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-	/* Initiate next USB packet transfer once UART completes transfer (transmitting data over Tx line) */
+	//Initiate next USB packet transfer once UART completes transfer (transmitting data over Tx line)
 	USBD_CDC_ReceivePacket( &husbd );
 }
+*/
 
 size_t usb_cdc_send(                    uint8_t *               data,
                                         size_t                  size )
@@ -396,7 +398,9 @@ size_t usb_cdc_send(                    uint8_t *               data,
   * @param  UartHandle: UART handle
   * @retval None
   */
+/*
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *UartHandle)
 {
 	Error_Handler();
 }
+*/
