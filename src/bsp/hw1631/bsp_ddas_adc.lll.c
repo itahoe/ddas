@@ -1,11 +1,12 @@
 /**
-  * @file    bsp_ddas_adc.c
+  * @file    bsp_ddas_adc.lll.c
   * @brief   BSP - DDAS ADC services
   * @author  Igor T. <research.tahoe@gmail.com>
   */
 
 
-#include	"bsp_ddas.h"
+#include "bsp_ddas.h"
+#include "stm32f4_lll.h"
 
 
 static ADC_HandleTypeDef                hadc            =   { .Instance = ADC1 };
@@ -296,15 +297,14 @@ void bsp_ddas_adc_init( void )
 /**
  * @brief BSP DDAS recieve block
  */
-void bsp_ddas_adc_start(                        uint32_t *      data,
-                                                size_t          size )
+void bsp_ddas_adc_start(                        uint16_t *              data_0,
+                                                uint16_t *              data_1,
+                                                size_t                  size )
+
 {
-	bsp_ddas_adc_dma_cfg( data, size );
-
-
-        //HAL_ADC_Start_IT( &hadc );
-        HAL_ADC_Start_DMA( &hadc, data, size );
-        HAL_TIM_Base_Start( &htim );
+	//bsp_ddas_adc_dma_cfg( data, size );
+        //HAL_ADC_Start_DMA( &hadc, data, size );
+        //HAL_TIM_Base_Start( &htim );
 
 /*
        //__HAL_ADC_CLEAR_FLAG( &AdcHandle, ADC_FLAG_EOC | ADC_FLAG_OVR);

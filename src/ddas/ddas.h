@@ -12,15 +12,17 @@
 #include "bsp_ddas.h"
 
 
-typedef	uint32_t                        ddas_smpl_t;
+typedef	uint16_t                        ddas_smpl_t;
 
 
 typedef	struct	ddas_s
 {
         size_t                  adc_smplrate_sps;
-        ddas_smpl_t *           data;
+        //ddas_smpl_t *           data;
+        ddas_smpl_t *           data_0;
+        ddas_smpl_t *           data_1;
 	size_t                  size;
-        size_t                  cnt_blck;
+        size_t                  blck_num;
 } ddas_t;
 
 

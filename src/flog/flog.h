@@ -43,12 +43,17 @@ void	flog_close(                     flog_t *                p );
 void	flog_open(                      flog_t *                p );
 
 void	flog_write(                     flog_t *                p,
-	                        const   uint8_t *               data,
+	                        const   uint8_t *               pbuf,
 	                                size_t                  len );
 
 int	flog_name_compose(              char *                  str,
 	                        const   char *			ext,
 	                                size_t                  len_max );
+
+int	flog_block_write(                       flog_t *                p,
+                                                uint16_t *              data,
+                                                size_t                  size,
+                                                size_t                  blck_num );
 
 
 #endif	//FLOG_H

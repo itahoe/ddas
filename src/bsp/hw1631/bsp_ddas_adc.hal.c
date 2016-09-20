@@ -16,19 +16,104 @@ static DMA_HandleTypeDef                hdma;
 static  size_t                          prescaler_tcks  =   0;
 
 
+/**
+  * @brief  DMA transfer complete callback.
+  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
+  *                the configuration information for the specified DMA module.
+  * @retval None
+  */
+static
+void ADC_DMAConvCplt(                           DMA_HandleTypeDef *     hdma )
+{
+  /* Retrieve ADC handle corresponding to current DMA handle */
+  ADC_HandleTypeDef* hadc = ( ADC_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
+
+  /* Update state machine on conversion status if not in error state */
+  if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_ERROR_INTERNAL | HAL_ADC_STATE_ERROR_DMA))
+  {
+    /* Update ADC state machine */
+    SET_BIT(hadc->State, HAL_ADC_STATE_REG_EOC);
+
+    /* Determine whether any further conversion upcoming on group regular   */
+    /* by external trigger, continuous mode or scan sequence on going.      */
+    /* Note: On STM32F4, there is no independent flag of end of sequence.   */
+    /*       The test of scan sequence on going is done either with scan    */
+    /*       sequence disabled or with end of conversion flag set to        */
+    /*       of end of sequence.                                            */
+    if(ADC_IS_SOFTWARE_START_REGULAR(hadc)                   &&
+       (hadc->Init.ContinuousConvMode == DISABLE)            &&
+       (HAL_IS_BIT_CLR(hadc->Instance->SQR1, ADC_SQR1_L) ||
+        HAL_IS_BIT_CLR(hadc->Instance->CR2, ADC_CR2_EOCS)  )   )
+    {
+      /* Disable ADC end of single conversion interrupt on group regular */
+      /* Note: Overrun interrupt was enabled with EOC interrupt in          */
+      /* HAL_ADC_Start_IT(), but is not disabled here because can be used   */
+      /* by overrun IRQ process below.                                      */
+      __HAL_ADC_DISABLE_IT(hadc, ADC_IT_EOC);
+
+      /* Set ADC state */
+      CLEAR_BIT(hadc->State, HAL_ADC_STATE_REG_BUSY);
+
+      if (HAL_IS_BIT_CLR(hadc->State, HAL_ADC_STATE_INJ_BUSY))
+      {
+        SET_BIT(hadc->State, HAL_ADC_STATE_READY);
+      }
+    }
+
+        /* Conversion complete callback */
+        //HAL_ADC_ConvCpltCallback(hadc);
+        hal_adc_dma_m0_complete_callback( hadc );
+  }
+  else
+  {
+    /* Call DMA error callback */
+    hadc->DMA_Handle->XferErrorCallback(hdma);
+  }
+}
+
+/**
+  * @brief  DMA half transfer complete callback.
+  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
+  *                the configuration information for the specified DMA module.
+  * @retval None
+  */
+static void ADC_DMAM1ConvCplt(DMA_HandleTypeDef *hdma)
+{
+        ADC_HandleTypeDef *     hadc    = ( ADC_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
+        //HAL_ADC_ConvHalfCpltCallback(hadc);
+        hal_adc_dma_m1_complete_callback( hadc );
+}
+
+/**
+  * @brief  DMA error callback
+  * @param  hdma: pointer to a DMA_HandleTypeDef structure that contains
+  *                the configuration information for the specified DMA module.
+  * @retval None
+  */
+static void ADC_DMAError(DMA_HandleTypeDef *hdma)
+{
+  ADC_HandleTypeDef* hadc = ( ADC_HandleTypeDef* )((DMA_HandleTypeDef* )hdma)->Parent;
+  hadc->State= HAL_ADC_STATE_ERROR_DMA;
+  /* Set ADC error code to DMA error */
+  hadc->ErrorCode |= HAL_ADC_ERROR_DMA;
+  HAL_ADC_ErrorCallback(hadc);
+}
+
+
+
 static
 void bsp_ddas_adc_timebase_cfg(                 uint32_t                smplrate_sps )
 {
-        size_t                  apb2_clk_hz     =   SystemCoreClock / 2;
-        size_t                  cnt_period_tcks =   (apb2_clk_hz / (prescaler_tcks + 1)) / smplrate_sps;
+        size_t                          apb2_clk_hz     =   HAL_RCC_GetPCLK2Freq();
+        size_t                          cnt_period_tcks =   (apb2_clk_hz / (prescaler_tcks + 1)) / smplrate_sps;
+        TIM_MasterConfigTypeDef         cfg;
+
 
 
         __HAL_RCC_TIM8_CLK_ENABLE();
         __HAL_RCC_TIM8_FORCE_RESET();
         __HAL_RCC_TIM8_RELEASE_RESET();
 
-
-        TIM_MasterConfigTypeDef         cfg;
 
         htim.Instance                   =   TIM8;
         htim.Init.Period                =   cnt_period_tcks - 1;
@@ -150,7 +235,6 @@ void bsp_ddas_adc_cfg( void )
         hadc.Init.ClockPrescaler        =   ADC_CLOCKPRESCALER_PCLK_DIV2;
         hadc.Init.Resolution            =   ADC_RESOLUTION_12B;
         hadc.Init.ScanConvMode          =   ENABLE;
-        //hadc.Init.ContinuousConvMode    =   ENABLE;
         hadc.Init.ContinuousConvMode    =   DISABLE;
         hadc.Init.DiscontinuousConvMode =   DISABLE;
         hadc.Init.NbrOfDiscConversion   =   0;
@@ -165,8 +249,6 @@ void bsp_ddas_adc_cfg( void )
         {
                 //ADC Initialization Error
         }
-
-
 
         if( HAL_ADC_ConfigChannel( &hadc, &cfg1 ) != HAL_OK )
         {
@@ -219,8 +301,8 @@ void bsp_ddas_adc_dma_cfg( void )
         hdma.Init.Direction             =   DMA_PERIPH_TO_MEMORY;
         hdma.Init.PeriphInc             =   DMA_PINC_DISABLE;
         hdma.Init.MemInc                =   DMA_MINC_ENABLE;
-        hdma.Init.PeriphDataAlignment   =   DMA_PDATAALIGN_WORD;
-        hdma.Init.MemDataAlignment      =   DMA_MDATAALIGN_WORD;
+        hdma.Init.PeriphDataAlignment   =   DMA_PDATAALIGN_HALFWORD;
+        hdma.Init.MemDataAlignment      =   DMA_PDATAALIGN_HALFWORD;
         hdma.Init.Mode                  =   DMA_CIRCULAR;
         hdma.Init.Priority              =   DMA_PRIORITY_HIGH;
         hdma.Init.FIFOMode              =   DMA_FIFOMODE_DISABLE;
@@ -251,11 +333,119 @@ void bsp_ddas_adc_init( void )
 /**
  * @brief BSP DDAS recieve block
  */
-void bsp_ddas_adc_start(                        uint32_t *      data,
+void bsp_ddas_adc_start(                        uint16_t *      data_0,
+                                                uint16_t *      data_1,
                                                 size_t          size )
 {
-        HAL_ADC_Start_DMA( &hadc, data, size );
-        //HAL_ADC_Start_IT( &hadc );
+        //HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
+        //HAL_ADC_Start_DMA( &hadc, (uint32_t *) data_0, size );
+
+
+
+        assert_param(IS_FUNCTIONAL_STATE(hadc->Init.ContinuousConvMode));
+        assert_param(IS_ADC_EXT_TRIG_EDGE(hadc->Init.ExternalTrigConvEdge));
+        //__HAL_LOCK( &hadc );
+
+        // Enable the ADC peripheral
+        __HAL_ADC_ENABLE( &hadc );
+
+        // Start conversion if ADC is effectively enabled
+        if( HAL_IS_BIT_SET( hadc.Instance->CR2, ADC_CR2_ADON ) )
+        {
+                //Set ADC state
+                // - Clear state bitfield related to regular group conversion results
+                // - Set state bitfield related to regular group operation
+                ADC_STATE_CLR_SET(      hadc.State,
+                                        HAL_ADC_STATE_READY | HAL_ADC_STATE_REG_EOC | HAL_ADC_STATE_REG_OVR,
+                                        HAL_ADC_STATE_REG_BUSY );
+
+                // If conversions on group regular are also triggering group injected, update ADC state.
+                if( READ_BIT( hadc.Instance->CR1, ADC_CR1_JAUTO ) != RESET )
+                {
+                        ADC_STATE_CLR_SET( hadc.State, HAL_ADC_STATE_INJ_EOC, HAL_ADC_STATE_INJ_BUSY );
+                }
+
+                // State machine update: Check if an injected conversion is ongoing
+                if( HAL_IS_BIT_SET( hadc.State, HAL_ADC_STATE_INJ_BUSY ) )
+                {
+                        //Reset ADC error code fields related to conversions on group regular
+                        CLEAR_BIT( hadc.ErrorCode, (HAL_ADC_ERROR_OVR | HAL_ADC_ERROR_DMA) );
+                }
+                else
+                {
+                        //Reset ADC all error code fields
+                        ADC_CLEAR_ERRORCODE( &hadc );
+                }
+
+                // Process unlocked
+                // Unlock before starting ADC conversions: in case of potential interruption, to let the process to ADC IRQ Handler.
+                __HAL_UNLOCK( &hadc );
+
+                // Set the DMA transfer complete callback
+                hadc.DMA_Handle->XferCpltCallback = ADC_DMAConvCplt;
+
+                // Set the DMA half transfer complete callback
+                //hadc.DMA_Handle->XferHalfCpltCallback = ADC_DMAHalfConvCplt;
+                hadc.DMA_Handle->XferM1CpltCallback     =   ADC_DMAM1ConvCplt;
+
+                // Set the DMA error callback
+                hadc.DMA_Handle->XferErrorCallback = ADC_DMAError;
+
+
+// XferCpltCallback
+// XferM1CpltCallback
+// XferErrorCallback
+
+
+                // Manage ADC and DMA start: ADC overrun interruption, DMA start, ADC start (in case of SW start):
+                // Clear regular group conversion flag and overrun flag
+                // (To ensure of no unknown state from potential previous ADC operations)
+                __HAL_ADC_CLEAR_FLAG( &hadc, ADC_FLAG_EOC | ADC_FLAG_OVR );
+
+                // Enable ADC overrun interrupt
+                __HAL_ADC_ENABLE_IT( &hadc, ADC_IT_OVR );
+
+                // Enable ADC DMA mode
+                hadc.Instance->CR2 |= ADC_CR2_DMA;
+
+                // Start the DMA channel
+                //HAL_DMA_Start_IT( hadc.DMA_Handle, (uint32_t) &hadc.Instance->DR, (uint32_t) data_0, size );
+
+                HAL_DMAEx_MultiBufferStart_IT(  hadc.DMA_Handle,
+                                                (uint32_t) &hadc.Instance->DR,
+                                                (uint32_t) data_0,
+                                                (uint32_t) data_1,
+                                                size );
+
+                // Check if Multimode enabled
+                if( HAL_IS_BIT_CLR( ADC->CCR, ADC_CCR_MULTI ) )
+                {
+                        // if no external trigger present enable software conversion of regular channels
+                        if( ( hadc.Instance->CR2 & ADC_CR2_EXTEN ) == RESET )
+                        {
+                                // Enable the selected ADC software conversion for regular group
+                                hadc.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+                        }
+                }
+                else
+                {
+                        // if instance of handle correspond to ADC1 and  no external trigger present enable software conversion of regular channels
+                        if( (hadc.Instance == ADC1) && ( (hadc.Instance->CR2 & ADC_CR2_EXTEN) == RESET) )
+                        {
+                                // Enable the selected ADC software conversion for regular group
+                                hadc.Instance->CR2 |= (uint32_t)ADC_CR2_SWSTART;
+                        }
+                }
+        }
+
+
+
+
+
+
+
+
+
         HAL_TIM_Base_Start( &htim );
 }
 
@@ -277,14 +467,3 @@ void bsp_ddas_adc_dma_isr( void )
 {
         HAL_DMA_IRQHandler( hadc.DMA_Handle );
 }
-
-/*
-void HAL_ADC_ConvHalfCpltCallback( &hadc )
-{
-}
-*/
-/*
-void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
-{
-}
-*/

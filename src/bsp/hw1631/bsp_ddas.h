@@ -18,7 +18,8 @@ void bsp_ddas_adc_init( void );
 
 void bsp_ddas_adc_smplrate_set(                 size_t                  smplrate_sps );
 
-void bsp_ddas_adc_start(                        uint32_t *              data,
+void bsp_ddas_adc_start(                        uint16_t *              data_0,
+                                                uint16_t *              data_1,
                                                 size_t                  size );
 
 void bsp_ddas_adc_dma_isr( void );

@@ -4,6 +4,7 @@
   * @author  Igor T. <research.tahoe@gmail.com>
   */
 
+#include "config.h"
 #include "ui.h"
 #include "ddas.h"
 #include "app.h"
@@ -16,15 +17,20 @@
 	USBD_HandleTypeDef      husbd;
 	app_t                   app;
 	flog_t                  flog;
-static  ddas_smpl_t             data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
+//static  ddas_smpl_t             data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
 
-static  ddas_t                  ddas    =     { .adc_smplrate_sps       =   1000,
-                                                .data                   =   data_adc[0],
-                                                .size                   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX };
+#pragma pack(4)
+static  ddas_smpl_t             data_adc[ 2 ][ CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX ];
+#pragma pack()
 
-#define STR_SIZEOF              256
-static  uint8_t                 str[ STR_SIZEOF ];
-
+static  ddas_t                  ddas    =
+{
+        .adc_smplrate_sps       =   CFG_DDAS_CHNL_SMPLRATE_SPS,
+        //.data                   =   data_adc[0],
+        .data_0                 =   data_adc[0],
+        .data_1                 =   data_adc[1],
+        .size                   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX,
+};
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -102,46 +108,32 @@ void app_clock_config( void )
         }
 }
 
-
-//void app_adc_dma_half_hook( void )
-//void app_hook_adc_dma_full( void )
-void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
+void hal_adc_dma_m1_complete_callback(          ADC_HandleTypeDef *     hadc )
 {
-        //bsp_ddas_dma_isr();
+        volatile        size_t          size;
+        size = size;
+}
 
-	//uint8_t *       data    =   (uint8_t *) data_adc[ CFG_DDAS_BLCK_SIZE_SMPL/2 ];
+//void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
+void hal_adc_dma_m0_complete_callback(          ADC_HandleTypeDef *     hadc )
+{
+        volatile        size_t          size;
+        size = size;
+
+/*
+	uint16_t *      data    =   (uint16_t *) data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL/2 ];
 	size_t          size    =   ( CFG_DDAS_BLOCK_SIZE_SMPL/2 ) * 4;
 
-        ddas.cnt_blck++;
+
+        ddas.blck_num++;
 
 	if( flog.sts.enable )
 	{
-/*
-                snprintf(       (char *) str,
-                                STR_SIZEOF,
-                                "%4d,%4d,%4d,%4d,%4d,%4d,%4d,%4d,\n",
-                                data_adc[ 0 ][ 0 ],
-                                data_adc[ 0 ][ 1 ],
-                                data_adc[ 0 ][ 2 ],
-                                data_adc[ 0 ][ 3 ],
-                                data_adc[ 0 ][ 4 ],
-                                data_adc[ 0 ][ 5 ],
-                                data_adc[ 0 ][ 6 ],
-                                data_adc[ 0 ][ 7 ] );
-
-                size    =   (4 + 1) * CFG_DDAS_CHNL_MAX + 1;
-*/
-                snprintf(       (char *) str,
-                                STR_SIZEOF,
-                                "%4d,\r\n",
-                                app.tick_1hz_cnt );
-
-                size            =   6;
-
                 ui_led_sd_set( false );
-		flog_write( &flog, str, size );
+                flog_block_write( &flog, data, size, ddas.blck_num );
                 ui_led_sd_set( true );
 	}
+*/
 }
 
 /**

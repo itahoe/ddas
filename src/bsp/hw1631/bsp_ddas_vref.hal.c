@@ -5,7 +5,6 @@
   */
 
 
-#include "stm32f4_lll.h"
 #include "stm32f4xx_hal.h"
 #include "bsp_ddas.h"
 
