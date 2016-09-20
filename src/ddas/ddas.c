@@ -26,11 +26,9 @@ void ddas_init(                             ddas_t *            p )
 void ddas_start(                            ddas_t *            p )
 {
 	bsp_ddas_adc_smplrate_set( p->adc_smplrate_sps );
-/*
-	bsp_ddas_adc_start( p->data, p->data, p->size );
-*/
-	bsp_ddas_adc_start(     p->data_0 + CFG_FLOG_BLCK_HDR_SIZE_OCT,
-                                p->data_1 + CFG_FLOG_BLCK_HDR_SIZE_OCT,
+
+	bsp_ddas_adc_start(     p->data_0 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
+                                p->data_1 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
                                 p->size - CFG_FLOG_BLCK_HDR_SIZE_OCT);
 }
 

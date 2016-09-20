@@ -17,7 +17,6 @@
 	USBD_HandleTypeDef      husbd;
 	app_t                   app;
 	flog_t                  flog;
-//static  ddas_smpl_t             data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL ][ CFG_DDAS_CHNL_MAX ];
 
 #pragma pack(4)
 static  ddas_smpl_t             data_adc[ 2 ][ CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX ];
@@ -26,7 +25,6 @@ static  ddas_smpl_t             data_adc[ 2 ][ CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DD
 static  ddas_t                  ddas    =
 {
         .adc_smplrate_sps       =   CFG_DDAS_CHNL_SMPLRATE_SPS,
-        //.data                   =   data_adc[0],
         .data_0                 =   data_adc[0],
         .data_1                 =   data_adc[1],
         .size                   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX,
@@ -110,30 +108,34 @@ void app_clock_config( void )
 
 void hal_adc_dma_m1_complete_callback(          ADC_HandleTypeDef *     hadc )
 {
-        volatile        size_t          size;
-        size = size;
-}
-
-//void HAL_ADC_ConvCpltCallback(                  ADC_HandleTypeDef *     hadc )
-void hal_adc_dma_m0_complete_callback(          ADC_HandleTypeDef *     hadc )
-{
-        volatile        size_t          size;
-        size = size;
-
-/*
-	uint16_t *      data    =   (uint16_t *) data_adc[ CFG_DDAS_BLOCK_SIZE_SMPL/2 ];
-	size_t          size    =   ( CFG_DDAS_BLOCK_SIZE_SMPL/2 ) * 4;
+	uint8_t *       data    =   (uint8_t *) ddas.data_1;
+	size_t          size    =   ddas.size * 2;
 
 
-        ddas.blck_num++;
+	*(data + 7)     =   ddas.blck_num++;
 
 	if( flog.sts.enable )
 	{
                 ui_led_sd_set( false );
-                flog_block_write( &flog, data, size, ddas.blck_num );
+                flog_write( &flog, data, size );
                 ui_led_sd_set( true );
 	}
-*/
+}
+
+void hal_adc_dma_m0_complete_callback(          ADC_HandleTypeDef *     hadc )
+{
+	uint8_t *       data    =   (uint8_t *) ddas.data_0;
+	size_t          size    =   ddas.size * 2;
+
+
+	*(data + 7)     =   ddas.blck_num++;
+
+	if( flog.sts.enable )
+	{
+                ui_led_sd_set( false );
+                flog_write( &flog, data, size );
+                ui_led_sd_set( true );
+	}
 }
 
 /**
