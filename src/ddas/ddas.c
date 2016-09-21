@@ -29,7 +29,7 @@ void ddas_start(                            ddas_t *            p )
 
 	bsp_ddas_adc_start(     p->data_0 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
                                 p->data_1 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
-                                p->size - CFG_FLOG_BLCK_HDR_SIZE_OCT);
+                                p->size - CFG_FLOG_BLCK_HDR_SIZE_OCT/2 );
 }
 
 void ddas_adc_dma_isr( void )

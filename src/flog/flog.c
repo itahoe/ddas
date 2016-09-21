@@ -4,12 +4,15 @@
   * @author  Igor T. <research.tahoe@gmail.com>
   */
 
-#include	<time.h>
-#include	"bsp_flog.h"
-#include	"flog.h"
-#include	"diskio.h"
-#include	"ff.h"
-#include	"app.h"
+
+#include <time.h>
+#include <string.h>
+#include "bsp_flog.h"
+#include "flog.h"
+#include "diskio.h"
+#include "ff.h"
+#include "app.h"
+
 
 FATFS   SDFatFs;  /* File system object for SD card logical drive */
 char    SDPath[4]; /* SD card logical drive path */
@@ -52,18 +55,16 @@ void	flog_close(                     flog_t *                p )
 void	flog_open(                      flog_t *                p )
 {
 	FRESULT         resp;
+	uint32_t        wr_bytes        =   0;
+        uint8_t         data[8]         =   { 'D','D','A','S','0','1','0','0' };
 
-
-	flog_name_compose( p->fname, "csv", sizeof( p->fname ) );
+	flog_name_compose( p->fname, "ddas", sizeof( p->fname ) );
 
 	resp    =   f_open( &p->file_log, p->fname, FA_CREATE_ALWAYS | FA_WRITE);
 	APP_TRACE_FF( "f_open() = ", resp );
 
-	if( resp == FR_OK )
-        {
-                p->sts.enable   =   true;
-        }
-        else
+
+	if( resp != FR_OK )
 	{
 		resp    =   f_mount( NULL, (TCHAR const*) SDPath, 1 );
                 APP_TRACE_FF( "f_mount() = ", resp );
@@ -77,13 +78,29 @@ void	flog_open(                      flog_t *                p )
 
                         APP_TRACE_FF( "f_open() = ", resp );
 
-                        p->sts.enable   =   (resp == FR_OK) ? true : false;
+                        //p->sts.enable   =   (resp == FR_OK) ? true : false;
 		}
                 else
                 {
-                        p->sts.enable   =   false;
+                        //p->sts.enable   =   false;
                 }
 	}
+
+	if( resp == FR_OK )
+        {
+                for( size_t i = 0; i < 1024; i += sizeof(data) )
+                {
+                        f_write( &p->file_log, data + i, sizeof(data), (void *) &wr_bytes );
+                        memset( data, 0, sizeof(data) );
+                }
+
+                p->sts.enable   =   true;
+        }
+        else
+        {
+                p->sts.enable   =   false;
+        }
+
 }
 
 /**
