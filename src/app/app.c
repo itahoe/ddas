@@ -17,18 +17,42 @@
 	USBD_HandleTypeDef      husbd;
 	app_t                   app;
 	flog_t                  flog;
-
+/*
 #pragma pack(4)
 static  ddas_smpl_t             data_adc[ 2 ][ CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX ];
+#pragma pack()
+*/
+
+#pragma pack(4)
+static  ddas_pckt_t             ddas_pckt[2]    =
+{
+        { /*.timestamp = 0,*/ .sync = 0x7E, .size = CFG_DDAS_PCKT_SIZE_OCT >> 8, .spare = 0, },
+        { /*.timestamp = 0,*/ .sync = 0x7E, .size = CFG_DDAS_PCKT_SIZE_OCT >> 8, .spare = 0, },
+};
 #pragma pack()
 
 static  ddas_t                  ddas    =
 {
         .adc_smplrate_sps       =   CFG_DDAS_CHNL_SMPLRATE_SPS,
-        .data_0                 =   data_adc[0],
-        .data_1                 =   data_adc[1],
-        .size                   =   CFG_DDAS_BLOCK_SIZE_SMPL * CFG_DDAS_CHNL_MAX,
+        .data_0                 =   ddas_pckt[0].data,
+        .data_1                 =   ddas_pckt[1].data,
 };
+
+#pragma pack(4)
+static  ddas_pckt_t             ddas_pckt_dummy[2]    =
+{
+        { /*.timestamp = 0,*/ .sync = 0x7E, .size = CFG_DDAS_PCKT_SIZE_OCT >> 8, .spare = 0, },
+        { /*.timestamp = 0,*/ .sync = 0x7E, .size = CFG_DDAS_PCKT_SIZE_OCT >> 8, .spare = 0, },
+};
+#pragma pack()
+
+static  ddas_t                  ddas_dummy =
+{
+        .adc_smplrate_sps       =   CFG_DDAS_CHNL_SMPLRATE_SPS,
+        .data_0                 =   ddas_pckt_dummy[0].data,
+        .data_1                 =   ddas_pckt_dummy[1].data,
+};
+
 
 /**
   * @brief  This function is executed in case of error occurrence.
@@ -106,37 +130,53 @@ void app_clock_config( void )
         }
 }
 
-void hal_adc_dma_m1_complete_callback(          ADC_HandleTypeDef *     hadc )
+static
+void adc_dma_complete(                          //ddas_t *                p,
+                                                //uint8_t *               data )
+                                                ddas_pckt_t *            p )
 {
-	uint8_t *       data    =   (uint8_t *) ddas.data_1;
-	size_t          size    =   ddas.size * 2;
+        //uint8_t *         data_flog     =   (uint8_t *) p->data;
+        //uint8_t *         data_cdc      =   (uint8_t *) p->data;
 
-
-	*(data + 7)     =   ddas.blck_num++;
+        usb_cdc_send( (uint8_t *) p->data, DDAS_PCKT_DATA_SIZE_OCT + DDAS_PCKT_TILE_SIZE_OCT );
 
 	if( flog.sts.enable )
 	{
                 ui_led_sd_set( false );
-                flog_write( &flog, data, size );
+
+                flog_write(     &flog,
+                                (uint8_t *) p->data,
+                                DDAS_PCKT_DATA_SIZE_OCT );
+
                 ui_led_sd_set( true );
 	}
+}
+
+void hal_adc_dma_m1_complete_callback(          ADC_HandleTypeDef *     hadc )
+{
+        //adc_dma_complete( &ddas, (uint8_t *) ddas.data_1 );
+        adc_dma_complete( &ddas_pckt[1] );
 }
 
 void hal_adc_dma_m0_complete_callback(          ADC_HandleTypeDef *     hadc )
 {
-	uint8_t *       data    =   (uint8_t *) ddas.data_0;
-	size_t          size    =   ddas.size * 2;
-
-
-	*(data + 7)     =   ddas.blck_num++;
-
-	if( flog.sts.enable )
-	{
-                ui_led_sd_set( false );
-                flog_write( &flog, data, size );
-                ui_led_sd_set( true );
-	}
+        //adc_dma_complete( &ddas, (uint8_t *) ddas.data_0 );
+        adc_dma_complete( &ddas_pckt[0] );
 }
+
+static
+void ddas_test_fill(                            ddas_t *                p )
+{
+        for( size_t block = 0; block < CFG_DDAS_PCKT_SIZE_OCT/2; block += CFG_DDAS_CHNL_MAX )
+        {
+                for( size_t ch = 0; ch < CFG_DDAS_CHNL_MAX; ch++ )
+                {
+                        p->data_0[ block + ch ] = (ch * 512);
+                        p->data_1[ block + ch ] = (ch * 512);
+                }
+        }
+}
+
 
 /**
  * @brief App entry
@@ -147,13 +187,17 @@ int main( void )
 	SysTick_Config(SystemCoreClock / BSP_SYSTICK_HZ);
 	HAL_Init();
 
+        APP_TRACE( "DDAS Start\n" );
+        APP_TRACE( "CFG_DDAS_PCKT_SIZE_OCT  = %d\n", CFG_DDAS_PCKT_SIZE_OCT);
+        //APP_TRACE( "DDAS_PCKT_HEAD_SIZE_OCT = %d\n", DDAS_PCKT_HEAD_SIZE_OCT );
+        APP_TRACE( "DDAS_PCKT_DATA_SIZE_OCT = %d\n", DDAS_PCKT_DATA_SIZE_OCT );
+        APP_TRACE( "DDAS_PCKT_TILE_SIZE_OCT = %d\n", DDAS_PCKT_TILE_SIZE_OCT );
+
 	ui_init();
 	ui_led_sd_set( false );
 	ui_led_usb_set( false );
 
 	__enable_irq();
-
-	//HAL_Delay( UI_KEY_LONG_TCKS );
 
 	ui_led_sd_flash(        UI_LED_FLSH_LONG_TCKS );
 	ui_led_usb_flash(       UI_LED_FLSH_LONG_TCKS );
@@ -167,8 +211,13 @@ int main( void )
 	USBD_CDC_RegisterInterface(     &husbd, &USBD_CDC_fops );
 	USBD_Start( &husbd );
 
+ddas_test_fill( &ddas );
+        //ddas_init( &ddas_dummy );
+        //ddas_start( &ddas_dummy );
+
         ddas_init( &ddas );
         ddas_start( &ddas );
+        ddas_vref_enable();
 
 	ui_led_usb_set( true );
 
@@ -181,10 +230,6 @@ int main( void )
 			switch( ui_key_func_status() )
 			{
 				case UI_KEY_STS_SHORT:
-                                        ui_led_usb_flash( UI_LED_FLSH_SHRT_TCKS );
-					break;
-
-				case UI_KEY_STS_LONG:
 					if( flog.sts.enable )
 					{
 						flog_close( &flog );
@@ -195,6 +240,23 @@ int main( void )
 					}
 
 					ui_led_sd_set( flog.sts.enable );
+
+					break;
+
+				case UI_KEY_STS_LONG:
+                                        if( app.sts.ddas_vref )
+                                        {
+                                                app.sts.ddas_vref       =   false;
+                                                ddas_vref_disable();
+                                        }
+                                        else
+                                        {
+                                                app.sts.ddas_vref       =   true;
+                                                ddas_vref_enable();
+                                        }
+
+                                        //ui_led_usb_set( app.sts.ddas_vref );
+
 					break;
 
 				default:
@@ -206,32 +268,5 @@ int main( void )
 		{
 			app.evt.tick_1hz    =   false;
 		}
-
-/*
-		if( app.evt.data0_ready )
-		{
-			app.evt.data0_ready     =   false;
-
-                        if( flog.sts.enable )
-                        {
-                                //ui_led_sd_set( false );
-                                //flog_write( &flog, gnss_data_uart_rx.data + 0, CFG_FLOG_BLCK_SIZE_OCT/2 );
-                                //ui_led_sd_set( true );
-                        }
-		}
-
-		if( app.evt.data1_ready )
-		{
-			app.evt.data1_ready     =   false;
-
-                        if( flog.sts.enable )
-                        {
-                                ui_led_sd_set( false );
-                                //flog_write( &flog, gnss_data_uart_rx.data + CFG_FLOG_BLCK_SIZE_OCT/2, CFG_FLOG_BLCK_SIZE_OCT/2 );
-                                ui_led_sd_set( true );
-                        }
-		}
-*/
-
 	}
 }

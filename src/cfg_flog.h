@@ -9,7 +9,7 @@
 
 
 #define CFG_FLOG_BLCK_SIZE_OCT          512
-#define CFG_FLOG_BLCK_HDR_SIZE_OCT      12
+#define CFG_FLOG_BLCK_HDR_SIZE_OCT      16
 
 //#define CFG_FLOG_FILE_SYNC_TOUT_SEC     120
 

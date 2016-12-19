@@ -14,7 +14,7 @@
 #include "bsp.h"
 
 
-void bsp_ddas_adc_init( void );
+void bsp_ddas_adc_init(                         void );
 
 void bsp_ddas_adc_smplrate_set(                 size_t                  smplrate_sps );
 
@@ -22,9 +22,12 @@ void bsp_ddas_adc_start(                        uint16_t *              data_0,
                                                 uint16_t *              data_1,
                                                 size_t                  size );
 
-void bsp_ddas_adc_dma_isr( void );
+void bsp_ddas_adc_dma_isr(                      void );
 
 void bsp_ddas_vref_init(                        size_t                  pwm_carrier_hz );
 
+void bsp_ddas_vref_enable(                      void );
+
+void bsp_ddas_vref_disable(                     void );
 
 #endif	//BSP_DDAS_H

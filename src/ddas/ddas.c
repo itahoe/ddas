@@ -15,7 +15,7 @@
 /**
  * @brief DDAS initialization
  */
-void ddas_init(                             ddas_t *            p )
+void ddas_init(                                 ddas_t *                p )
 {
         size_t          pwm_carrier_hz  =   1000000;
 
@@ -23,14 +23,25 @@ void ddas_init(                             ddas_t *            p )
 	bsp_ddas_adc_init();
 }
 
-void ddas_start(                            ddas_t *            p )
+void ddas_start(                                ddas_t *                p )
 {
 	bsp_ddas_adc_smplrate_set( p->adc_smplrate_sps );
 
-	bsp_ddas_adc_start(     p->data_0 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
-                                p->data_1 + CFG_FLOG_BLCK_HDR_SIZE_OCT/2,
-                                p->size - CFG_FLOG_BLCK_HDR_SIZE_OCT/2 );
+	bsp_ddas_adc_start(     p->data_0,
+                                p->data_1,
+                                DDAS_PCKT_DATA_SIZE_OCT / sizeof( ddas_smpl_t ) );
 }
+
+void ddas_vref_enable(                          void )
+{
+	bsp_ddas_vref_enable();
+}
+
+void ddas_vref_disable(                         void )
+{
+	bsp_ddas_vref_disable();
+}
+
 
 void ddas_adc_dma_isr( void )
 {

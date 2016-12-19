@@ -74,6 +74,32 @@ void bsp_ddas_vref_pwm_cfg(                     size_t                  pwm_carr
 
 void bsp_ddas_vref_init(                        size_t                  pwm_carrier_hz )
 {
-        bsp_ddas_vref_io_cfg();
+        //bsp_ddas_vref_io_cfg();
         bsp_ddas_vref_pwm_cfg( pwm_carrier_hz );
+}
+
+void bsp_ddas_vref_enable(                      void )
+{
+	GPIO_InitTypeDef        gpio_vref       = {     .Pin            =   GPIO_PIN_9,
+	                                                .Mode           =   GPIO_MODE_AF_PP,
+	                                                .Pull           =   GPIO_NOPULL,
+                                                        .Speed          =   GPIO_SPEED_FREQ_MEDIUM,
+                                                        .Alternate      =   GPIO_AF1_TIM1 };
+
+	__HAL_RCC_GPIOE_CLK_ENABLE();
+
+	HAL_GPIO_Init( GPIOE, &gpio_vref );
+}
+
+void bsp_ddas_vref_disable(                     void )
+{
+	GPIO_InitTypeDef        gpio_vref       = {     .Pin            =   GPIO_PIN_9,
+	                                                .Mode           =   GPIO_MODE_INPUT,
+	                                                .Pull           =   GPIO_NOPULL,
+                                                        .Speed          =   GPIO_SPEED_FREQ_MEDIUM,
+                                                        .Alternate      =   GPIO_AF1_TIM1 };
+
+	__HAL_RCC_GPIOE_CLK_ENABLE();
+
+	HAL_GPIO_Init( GPIOE, &gpio_vref );
 }

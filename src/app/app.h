@@ -32,6 +32,7 @@ typedef	union	app_status_u
 	{
 		bool            log_enabled     :    1;
 		bool            log_expired     :    1;
+                bool            ddas_vref       :    1;
 		bool                            :    0;
 	};
 } app_status_t;

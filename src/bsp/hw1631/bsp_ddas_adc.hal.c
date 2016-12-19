@@ -5,7 +5,6 @@
   */
 
 
-//#include "stm32f4xx_hal.h"
 #include "bsp_ddas.h"
 
 
@@ -98,8 +97,6 @@ static void ADC_DMAError(DMA_HandleTypeDef *hdma)
   hadc->ErrorCode |= HAL_ADC_ERROR_DMA;
   HAL_ADC_ErrorCallback(hadc);
 }
-
-
 
 static
 void bsp_ddas_adc_timebase_cfg(                 uint32_t                smplrate_sps )
@@ -337,11 +334,6 @@ void bsp_ddas_adc_start(                        uint16_t *      data_0,
                                                 uint16_t *      data_1,
                                                 size_t          size )
 {
-        //HAL_DMAEx_MultiBufferStart_IT(DMA_HandleTypeDef *hdma, uint32_t SrcAddress, uint32_t DstAddress, uint32_t SecondMemAddress, uint32_t DataLength);
-        //HAL_ADC_Start_DMA( &hadc, (uint32_t *) data_0, size );
-
-
-
         assert_param(IS_FUNCTIONAL_STATE(hadc->Init.ContinuousConvMode));
         assert_param(IS_ADC_EXT_TRIG_EDGE(hadc->Init.ExternalTrigConvEdge));
         //__HAL_LOCK( &hadc );
@@ -437,14 +429,6 @@ void bsp_ddas_adc_start(                        uint16_t *      data_0,
                         }
                 }
         }
-
-
-
-
-
-
-
-
 
         HAL_TIM_Base_Start( &htim );
 }
